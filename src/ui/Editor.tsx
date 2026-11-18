@@ -71,7 +71,11 @@ export function Editor({ id }: { id: string }) {
       setTime(p.trim.start);
       setProject(p);
       setMedia({ screen, webcam, screenUrl, webcamUrl, background });
-      void filmstrip(screen, 24).then((s) => !cancelled && setStrip(s));
+      void filmstrip(screen, 24).then((s) => {
+        urls.push(...s);
+        if (cancelled) s.forEach((u) => URL.revokeObjectURL(u));
+        else setStrip(s);
+      });
       // A brand new project gets its zooms right away.
       if (p.zooms.length === 0 && p.createdAt === p.updatedAt) void runAutoZoom(p, screen);
     })().catch((err) => setError(err instanceof Error ? err.message : String(err)));
@@ -120,12 +124,23 @@ export function Editor({ id }: { id: string }) {
     commit({ ...next, updatedAt: Date.now() });
   }, []);
 
-  // Autosave.
+  // Autosave, and save right away when leaving the editor so the last change isn't lost.
+  const saved = useRef<Project | null>(null);
   useEffect(() => {
     if (!project) return;
-    const t = setTimeout(() => void saveProject(project), 400);
+    const t = setTimeout(() => {
+      saved.current = project;
+      void saveProject(project);
+    }, 400);
     return () => clearTimeout(t);
   }, [project]);
+  useEffect(
+    () => () => {
+      const p = projectRef.current;
+      if (p && p !== saved.current) void saveProject(p);
+    },
+    [],
+  );
 
   // ---- Drawing ----
   const draw = useCallback(() => {
@@ -244,7 +259,10 @@ export function Editor({ id }: { id: string }) {
       if (controller.signal.aborted) return;
       update((cur) => ({ ...cur, zooms: normalizeZooms([...cur.zooms.filter((z) => z.origin === 'manual'), ...zooms.filter((z) => z.origin === 'auto')], cur.duration) }));
     } catch (err) {
-      if (!controller.signal.aborted) console.warn('Clipglow: auto zoom failed', err);
+      if (!controller.signal.aborted) {
+        console.warn('Clipglow: auto zoom failed', err);
+        setNoticeText('Auto zoom could not read this video. You can still add zooms by hand.');
+      }
     } finally {
       if (analyzeAbort.current === controller) setAnalyzing(null);
     }

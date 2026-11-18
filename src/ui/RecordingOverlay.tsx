@@ -15,7 +15,6 @@ export function RecordingOverlay({ session, onDone, onCancel, onError }: Props) 
   const [started, setStarted] = useState(false);
   const [paused, setPaused] = useState(false);
   const [elapsed, setElapsed] = useState(0);
-  const preview = useRef<HTMLVideoElement>(null);
   const stopping = useRef(false);
 
   // 3, 2, 1, go.
@@ -27,6 +26,7 @@ export function RecordingOverlay({ session, onDone, onCancel, onError }: Props) 
           session.start();
           setStarted(true);
         } catch (err) {
+          session.close();
           onError(err instanceof Error ? err.message : String(err));
         }
       }
@@ -42,9 +42,10 @@ export function RecordingOverlay({ session, onDone, onCancel, onError }: Props) 
     return () => clearInterval(id);
   }, [started, paused]);
 
-  useEffect(() => {
-    if (preview.current) preview.current.srcObject = session.display;
-  }, [session]);
+  // The preview only exists after the countdown, so it gets the stream when it appears.
+  const preview = (el: HTMLVideoElement | null) => {
+    if (el && el.srcObject !== session.display) el.srcObject = session.display;
+  };
 
   const stop = async () => {
     if (stopping.current) return;
