@@ -296,12 +296,20 @@ export function Home() {
         </section>
       )}
 
+      <section className="showcase">
+        <video src="demo.mp4" autoPlay muted loop playsInline preload="metadata" aria-label="A screen recording made with Clipglow" />
+        <p className="muted small">
+          Made with Clipglow from the sample recording. The zooms, the smooth pointer and the click effects were added
+          automatically.
+        </p>
+      </section>
+
       <section className="features">
         {[
           [ZoomIn, 'Auto zoom', 'Finds where things happen and zooms in smoothly, even in videos recorded elsewhere.'],
           [Sparkles, 'Looks great by default', 'Wallpapers, padding, rounded corners, shadows and window frames.'],
           [Camera, 'Webcam bubble', 'Your face in a corner, as a circle or a rounded square. Change it any time.'],
-          [Pointer, 'Smooth cursor', 'Click effects and a calm, gliding pointer for recordings with cursor data.'],
+          [Pointer, 'Smooth cursor', 'Click effects and a calm, gliding pointer for recordings with cursor data, like the sample.'],
           [Download, 'MP4 and GIF', 'Up to 4K at 60 fps, fast thanks to your graphics card. GIFs for your README.'],
           [Shield, 'Private', 'Your video never leaves your computer. No account, no upload, no watermark.'],
         ].map(([Icon, title, text]) => {

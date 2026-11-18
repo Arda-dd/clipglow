@@ -26,5 +26,21 @@
     "typescript": "^7.0.2",
     "vite": "^8.3.5",
     "vitest": "^5.0.5"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Arda-dd/clipglow.git"
+  },
+  "homepage": "https://arda-dd.github.io/clipglow/",
+  "author": "Arda-dd",
+  "keywords": [
+    "screen-recorder",
+    "screen-studio-alternative",
+    "auto-zoom",
+    "video-editor",
+    "webcodecs",
+    "browser",
+    "demo-video",
+    "open-source"
+  ]
 }
