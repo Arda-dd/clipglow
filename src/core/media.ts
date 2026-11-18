@@ -50,13 +50,14 @@ export async function probe(blob: Blob): Promise<MediaInfo> {
  */
 export async function remux(blob: Blob): Promise<Blob> {
   const input = open(blob);
-  const output = new Output({ format: new WebMOutputFormat(), target: new BufferTarget() });
+  const mp4 = blob.type.includes('mp4');
+  const output = new Output({ format: mp4 ? new Mp4OutputFormat({ fastStart: 'in-memory' }) : new WebMOutputFormat(), target: new BufferTarget() });
   try {
     const conversion = await Conversion.init({ input, output, showWarnings: false });
     if (!conversion.isValid) return blob;
     await conversion.execute();
     const buffer = output.target.buffer;
-    return buffer ? new Blob([buffer], { type: 'video/webm' }) : blob;
+    return buffer ? new Blob([buffer], { type: mp4 ? 'video/mp4' : 'video/webm' }) : blob;
   } catch (err) {
     console.warn('Clipglow: could not remux the recording, using it as is', err);
     return blob;
@@ -306,6 +307,17 @@ async function exportGif(project: Project, sources: ExportSources, options: Expo
     for (let t = project.trim.start; t < project.trim.end; t += 1 / options.fps) times.push(t);
     const gif = GIFEncoder();
     const delay = Math.round(1000 / options.fps);
+    // Screen recordings hold still a lot. A frame identical to the one before just makes that one last longer.
+    let pending: { data: Uint8ClampedArray; delay: number } | null = null;
+    const flush = () => {
+      if (!pending) return;
+      const palette = quantize(pending.data, 256);
+      gif.writeFrame(applyPalette(pending.data, palette), width, height, { palette, delay: pending.delay });
+    };
+    const same = (a: Uint8ClampedArray, b: Uint8ClampedArray) => {
+      for (let k = 0; k < a.length; k += 4) if (Math.abs(a[k] - b[k]) > 3 || Math.abs(a[k + 1] - b[k + 1]) > 3 || Math.abs(a[k + 2] - b[k + 2]) > 3) return false;
+      return true;
+    };
     let i = 0;
     for await (const frame of sink.canvasesAtTimestamps(times)) {
       if (signal.aborted) throw new ExportCanceled();
@@ -313,14 +325,18 @@ async function exportGif(project: Project, sources: ExportSources, options: Expo
       const cam = webcam ? await webcam.at(t - project.webcamOffset) : null;
       renderer.draw(ctx, width, height, { t, screen: frame?.canvas ?? null, webcam: cam });
       const { data } = ctx.getImageData(0, 0, width, height);
-      const palette = quantize(data, 256);
-      gif.writeFrame(applyPalette(data, palette), width, height, { palette, delay });
+      if (pending && same(pending.data, data)) pending.delay += delay;
+      else {
+        flush();
+        pending = { data, delay };
+      }
       if (i % 4 === 0) {
         onProgress(i / times.length);
         // Let the page breathe: quantizing is heavy and runs on the main thread.
         await new Promise((r) => setTimeout(r, 0));
       }
     }
+    flush();
     gif.finish();
     onProgress(1);
     return new Blob([gif.bytes() as Uint8Array<ArrayBuffer>], { type: 'image/gif' });

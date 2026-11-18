@@ -75,6 +75,26 @@ export async function loadSample(onStatus?: (s: string) => void): Promise<Projec
   return project;
 }
 
+/** A message to show once when a project opens. */
+export function setNotice(id: string, message: string) {
+  try {
+    sessionStorage.setItem(`clipglow:notice:${id}`, message);
+  } catch {
+    // Not shown then.
+  }
+}
+
+export function takeNotice(id: string): string | null {
+  try {
+    const key = `clipglow:notice:${id}`;
+    const message = sessionStorage.getItem(key);
+    sessionStorage.removeItem(key);
+    return message;
+  } catch {
+    return null;
+  }
+}
+
 export function download(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');

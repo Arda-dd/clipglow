@@ -7,10 +7,10 @@ import { getAsset, getProject, saveAsset, saveProject } from '../core/storage';
 import type { Project, ZoomSegment } from '../core/types';
 import { goHome } from './App';
 import { ExportDialog } from './ExportDialog';
-import { Back, Download, Logo, Pause, Play, Redo, Sparkles, Undo, ZoomIn } from './icons';
+import { Back, Close, Download, Logo, Pause, Play, Redo, Sparkles, Undo, ZoomIn } from './icons';
 import { Inspector, type Update } from './Inspector';
 import { Timeline } from './Timeline';
-import { autoZoom } from './workflow';
+import { autoZoom, takeNotice } from './workflow';
 
 interface Media {
   screen: Blob;
@@ -33,6 +33,7 @@ export function Editor({ id }: { id: string }) {
   const [analyzing, setAnalyzing] = useState<number | null>(null);
   const [strip, setStrip] = useState<string[]>([]);
   const [exporting, setExporting] = useState(false);
+  const [notice, setNoticeText] = useState<string | null>(() => takeNotice(id));
   const [, force] = useState(0);
 
   const projectRef = useRef<Project | null>(null);
@@ -293,9 +294,13 @@ export function Editor({ id }: { id: string }) {
 
   const changeTrim = useCallback(
     (trim: { start: number; end: number }, done: boolean) => {
+      // Show the frame at the handle being dragged.
+      const movedStart = trim.start !== projectRef.current?.trim.start;
       update((p) => ({ ...p, trim }), 'trim');
-      if (done) lastKey.current = null;
-      else seek(trim.start !== projectRef.current?.trim.start ? trim.start : trim.end);
+      if (done) {
+        lastKey.current = null;
+        if (timeRef.current < trim.start || timeRef.current > trim.end) seek(trim.start);
+      } else seek(movedStart ? trim.start : trim.end);
     },
     [update, seek],
   );
@@ -414,6 +419,14 @@ export function Editor({ id }: { id: string }) {
 
       <main className="editor-main">
         <section className="preview-area">
+          {notice && (
+            <div className="editor-notice" role="status">
+              <span>{notice}</span>
+              <button type="button" className="icon-btn" onClick={() => setNoticeText(null)} aria-label="Dismiss">
+                <Close size={16} />
+              </button>
+            </div>
+          )}
           <div className="stage" ref={stage}>
             <canvas
               ref={canvas}

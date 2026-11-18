@@ -6,7 +6,7 @@ import type { Project } from '../core/types';
 import { openProject } from './App';
 import { Camera, Download, Film, Github, Logo, Mic, Monitor, Pointer, Shield, Sparkles, Trash, Upload, ZoomIn } from './icons';
 import { RecordingOverlay } from './RecordingOverlay';
-import { browserSupport, importVideo, loadSample } from './workflow';
+import { browserSupport, importVideo, loadSample, setNotice } from './workflow';
 
 export const REPO = 'https://github.com/Arda-dd/clipglow';
 
@@ -109,9 +109,11 @@ export function Home() {
   const finishRecording = (result: RecordingResult) => {
     setSession(null);
     const name = `Recording ${new Date().toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}`;
-    void run((status) =>
-      importVideo(result.screen, name, { webcam: result.webcam, webcamOffset: result.webcamOffset, fromRecorder: true }, status),
-    );
+    void run(async (status) => {
+      const project = await importVideo(result.screen, name, { webcam: result.webcam, webcamOffset: result.webcamOffset, fromRecorder: true }, status);
+      if (result.audioDropped) setNotice(project.id, 'The sound could not be recorded, so this recording is silent. Check your microphone, or share without sound.');
+      return project;
+    });
   };
 
   const needsPermission = devices.mics.length === 0 && devices.cameras.length === 0;
@@ -330,7 +332,17 @@ export function Home() {
           <span>{busy}</span>
         </div>
       )}
-      {session && <RecordingOverlay session={session} onDone={finishRecording} onCancel={() => setSession(null)} />}
+      {session && (
+        <RecordingOverlay
+          session={session}
+          onDone={finishRecording}
+          onCancel={() => setSession(null)}
+          onError={(message) => {
+            setSession(null);
+            setError(message);
+          }}
+        />
+      )}
     </div>
   );
 }

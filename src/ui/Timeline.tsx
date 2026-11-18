@@ -17,7 +17,7 @@ interface Props {
   onAdd: (t: number) => void;
 }
 
-const STEPS = [0.5, 1, 2, 5, 10, 15, 30, 60, 120, 300, 600];
+const STEPS = [1, 2, 5, 10, 15, 30, 60, 120, 300, 600];
 const MIN_TRIM = 0.5;
 
 type Drag =

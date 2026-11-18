@@ -7,10 +7,12 @@ interface Props {
   session: RecordingSession;
   onDone: (result: RecordingResult) => void;
   onCancel: () => void;
+  onError: (message: string) => void;
 }
 
-export function RecordingOverlay({ session, onDone, onCancel }: Props) {
+export function RecordingOverlay({ session, onDone, onCancel, onError }: Props) {
   const [count, setCount] = useState(3);
+  const [started, setStarted] = useState(false);
   const [paused, setPaused] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const preview = useRef<HTMLVideoElement>(null);
@@ -20,18 +22,25 @@ export function RecordingOverlay({ session, onDone, onCancel }: Props) {
   useEffect(() => {
     if (count <= 0) return;
     const id = setTimeout(() => {
-      if (count === 1) session.start();
+      if (count === 1) {
+        try {
+          session.start();
+          setStarted(true);
+        } catch (err) {
+          onError(err instanceof Error ? err.message : String(err));
+        }
+      }
       setCount(count - 1);
     }, 1000);
     return () => clearTimeout(id);
   }, [count, session]);
 
   useEffect(() => {
-    if (count > 0 || paused) return;
-    const started = performance.now() - elapsed * 1000;
-    const id = setInterval(() => setElapsed((performance.now() - started) / 1000), 250);
+    if (!started || paused) return;
+    const from = performance.now() - elapsed * 1000;
+    const id = setInterval(() => setElapsed((performance.now() - from) / 1000), 250);
     return () => clearInterval(id);
-  }, [count, paused]);
+  }, [started, paused]);
 
   useEffect(() => {
     if (preview.current) preview.current.srcObject = session.display;
@@ -40,12 +49,16 @@ export function RecordingOverlay({ session, onDone, onCancel }: Props) {
   const stop = async () => {
     if (stopping.current) return;
     stopping.current = true;
-    if (session.state === 'inactive') {
+    if (!started || session.state === 'inactive') {
       session.close();
       onCancel();
       return;
     }
-    onDone(await session.stop());
+    try {
+      onDone(await session.stop());
+    } catch (err) {
+      onError(err instanceof Error ? err.message : String(err));
+    }
   };
 
   // "Stop sharing" in the browser's own bar.
@@ -75,7 +88,7 @@ export function RecordingOverlay({ session, onDone, onCancel }: Props) {
           <div className="record-status">
             <span className={`rec-dot${paused ? ' paused' : ''}`} />
             <span className="record-time">{formatTime(elapsed)}</span>
-            <span className="muted">{paused ? 'Paused' : 'Recording'}</span>
+            <span className="muted">{!started ? 'Getting ready…' : paused ? 'Paused' : 'Recording'}</span>
           </div>
           <p className="muted small">Switch to the window you are recording. Come back here, or use the browser's sharing bar, to stop.</p>
           <div className="record-actions">
