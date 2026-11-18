@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Taskly</title>
+    <!-- A made-up app, only used to record the sample video. -->
+    <style>
+      * { box-sizing: border-box; }
+      html, body { margin: 0; height: 100%; }
+      body { font: 14px/1.45 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #1d2130; background: #f6f7fb; display: grid; grid-template-columns: 232px 1fr; cursor: none; }
+      aside { background: #fff; border-right: 1px solid #e8eaf1; padding: 18px 14px; display: flex; flex-direction: column; gap: 4px; }
+      .logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 17px; padding: 4px 8px 18px; }
+      .logo i { width: 28px; height: 28px; border-radius: 8px; background: linear-gradient(135deg, #34d399, #3b82f6); display: grid; place-items: center; color: #fff; font-style: normal; font-size: 15px; }
+      .nav { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 9px; color: #4a5068; font-weight: 600; }
+      .nav b { margin-left: auto; font-weight: 600; font-size: 12px; color: #8a90a6; }
+      .nav.on { background: #eef2ff; color: #3446d4; }
+      .nav.on b { color: #3446d4; }
+      .dot { width: 9px; height: 9px; border-radius: 3px; }
+      .section { margin: 18px 10px 6px; font-size: 11.5px; font-weight: 700; color: #9aa0b4; text-transform: uppercase; letter-spacing: .06em; }
+      main { padding: 26px 34px; overflow: hidden; }
+      header { display: flex; align-items: center; gap: 14px; margin-bottom: 22px; }
+      h1 { margin: 0; font-size: 26px; letter-spacing: -.02em; }
+      .date { color: #8a90a6; font-weight: 600; }
+      .search { margin-left: auto; width: 260px; height: 38px; border-radius: 10px; border: 1px solid #e3e6ef; background: #fff; display: flex; align-items: center; padding: 0 12px; color: #a0a6ba; }
+      .primary { height: 38px; padding: 0 16px; border-radius: 10px; border: 0; background: #3b5bfd; color: #fff; font: inherit; font-weight: 700; box-shadow: 0 4px 14px -4px rgba(59,91,253,.6); transition: transform .12s, background .12s; }
+      .primary:hover { background: #2f4ee6; }
+      .primary:active { transform: scale(.96); }
+      .tabs { display: flex; gap: 6px; margin-bottom: 16px; }
+      .tab { padding: 6px 12px; border-radius: 99px; font-weight: 600; color: #5c6380; background: #fff; border: 1px solid #e6e8f0; }
+      .tab.on { background: #1d2130; color: #fff; border-color: #1d2130; }
+      .list { background: #fff; border-radius: 14px; border: 1px solid #e8eaf1; overflow: hidden; }
+      .task { display: flex; align-items: center; gap: 14px; padding: 14px 18px; border-bottom: 1px solid #f0f1f6; transition: background .3s; }
+      .task:last-child { border-bottom: 0; }
+      .task.new { animation: slide .5s ease-out; background: #f3f6ff; }
+      @keyframes slide { from { transform: translateY(-14px); opacity: 0; } }
+      .check { width: 20px; height: 20px; border-radius: 6px; border: 2px solid #c7cbd9; display: grid; place-items: center; flex: none; transition: all .2s; }
+      .task.done .check { background: #22c55e; border-color: #22c55e; }
+      .task.done .check::after { content: ''; width: 5px; height: 10px; border: solid #fff; border-width: 0 2.5px 2.5px 0; transform: rotate(45deg) translate(-1px, -1px); }
+      .title { font-weight: 600; }
+      .task.done .title { text-decoration: line-through; color: #9aa0b4; }
+      .meta { color: #8a90a6; font-size: 12.5px; }
+      .tag { margin-left: auto; padding: 3px 9px; border-radius: 99px; font-size: 12px; font-weight: 700; }
+      .high { background: #fee2e2; color: #c02626; }
+      .med { background: #fef3c7; color: #a16207; }
+      .low { background: #dcfce7; color: #15803d; }
+      .avatar { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-size: 11px; font-weight: 700; flex: none; }
+      .backdrop { position: fixed; inset: 0; background: rgba(20,24,40,.35); display: none; place-items: center; }
+      .backdrop.open { display: grid; animation: fade .2s; }
+      @keyframes fade { from { opacity: 0; } }
+      .modal { width: 460px; background: #fff; border-radius: 16px; padding: 22px; box-shadow: 0 30px 70px -20px rgba(20,24,40,.45); animation: pop .25s ease-out; }
+      @keyframes pop { from { transform: scale(.96) translateY(8px); opacity: 0; } }
+      .modal h2 { margin: 0 0 16px; font-size: 18px; }
+      label { display: block; font-weight: 700; font-size: 12.5px; color: #5c6380; margin: 14px 0 6px; }
+      .input { width: 100%; height: 42px; border-radius: 10px; border: 1.5px solid #e3e6ef; padding: 0 12px; font: inherit; font-size: 15px; outline: none; }
+      .input:focus { border-color: #3b5bfd; box-shadow: 0 0 0 4px rgba(59,91,253,.15); }
+      .chips { display: flex; gap: 8px; }
+      .chip { padding: 7px 14px; border-radius: 99px; border: 1.5px solid #e3e6ef; font-weight: 700; color: #5c6380; background: #fff; font: inherit; font-weight: 700; }
+      .chip.on.c-high { background: #fee2e2; border-color: #f87171; color: #c02626; }
+      .chip.on.c-med { background: #fef3c7; border-color: #fbbf24; color: #a16207; }
+      .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 22px; }
+      .ghost { height: 38px; padding: 0 14px; border-radius: 10px; border: 1px solid #e3e6ef; background: #fff; font: inherit; font-weight: 700; color: #5c6380; }
+      .toast { position: fixed; left: 50%; bottom: 26px; transform: translate(-50%, 20px); opacity: 0; background: #1d2130; color: #fff; padding: 11px 16px; border-radius: 12px; font-weight: 600; transition: all .3s; display: flex; gap: 8px; align-items: center; }
+      .toast.show { opacity: 1; transform: translate(-50%, 0); }
+      .toast i { color: #4ade80; font-style: normal; }
+    </style>
+  </head>
+  <body>
+    <aside>
+      <div class="logo"><i>✓</i> Taskly</div>
+      <div class="nav" id="nav-inbox">Inbox <b>12</b></div>
+      <div class="nav on" id="nav-today">Today <b id="today-count">5</b></div>
+      <div class="nav" id="nav-upcoming">Upcoming <b>9</b></div>
+      <div class="nav">Completed</div>
+      <div class="section">Projects</div>
+      <div class="nav"><span class="dot" style="background:#3b82f6"></span> Website</div>
+      <div class="nav"><span class="dot" style="background:#f59e0b"></span> Launch</div>
+      <div class="nav"><span class="dot" style="background:#10b981"></span> Mobile app</div>
+      <div class="nav"><span class="dot" style="background:#ec4899"></span> Hiring</div>
+    </aside>
+    <main>
+      <header>
+        <h1 id="heading">Today</h1>
+        <span class="date">Wednesday, 18 November</span>
+        <div class="search">Search tasks…</div>
+        <button class="primary" id="new">+ New task</button>
+      </header>
+      <div class="tabs"><span class="tab on">All</span><span class="tab">Assigned to me</span><span class="tab">Overdue</span></div>
+      <div class="list" id="list"></div>
+    </main>
+    <div class="backdrop" id="backdrop">
+      <div class="modal">
+        <h2>New task</h2>
+        <label for="title">Title</label>
+        <input class="input" id="title" autocomplete="off" />
+        <label>Priority</label>
+        <div class="chips">
+          <button class="chip c-low" id="p-low">Low</button>
+          <button class="chip c-med on" id="p-med">Medium</button>
+          <button class="chip c-high" id="p-high">High</button>
+        </div>
+        <div class="actions"><button class="ghost">Cancel</button><button class="primary" id="create">Create task</button></div>
+      </div>
+    </div>
+    <div class="toast" id="toast"><i>●</i> Task created</div>
+    <script>
+      const today = [
+        ['Review the pricing page copy', 'Website · Due 11:00', 'med', 'MK', '#8b5cf6'],
+        ['Send the beta invite email', 'Launch · Due 13:30', 'high', 'AY', '#f97316'],
+        ['Fix the login redirect on Android', 'Mobile app · Due 15:00', 'high', 'DS', '#0ea5e9'],
+        ['Prepare questions for the design interview', 'Hiring · Due 16:00', 'low', 'EB', '#10b981'],
+        ['Update the changelog', 'Website · Due 17:30', 'low', 'MK', '#8b5cf6'],
+      ];
+      const upcoming = [
+        ['Plan the launch livestream', 'Launch · Thursday', 'high', 'AY', '#f97316'],
+        ['Write the onboarding emails', 'Launch · Thursday', 'med', 'EB', '#10b981'],
+        ['App Store screenshots', 'Mobile app · Friday', 'med', 'DS', '#0ea5e9'],
+        ['Interview: product designer', 'Hiring · Friday', 'low', 'EB', '#10b981'],
+        ['Blog post: what we learned in beta', 'Website · Monday', 'low', 'MK', '#8b5cf6'],
+        ['Accessibility review', 'Website · Tuesday', 'med', 'MK', '#8b5cf6'],
+      ];
+      const label = { high: 'High', med: 'Medium', low: 'Low' };
+      const row = ([t, m, p, who, color], extra = '') =>
+        `<div class="task ${extra}"><span class="check"></span><div><div class="title">${t}</div><div class="meta">${m}</div></div><span class="tag ${p}">${label[p]}</span><span class="avatar" style="background:${color}">${who}</span></div>`;
+      const list = document.getElementById('list');
+      const show = (items) => (list.innerHTML = items.map((i) => row(i)).join(''));
+      show(today);
+      list.addEventListener('click', (e) => e.target.closest('.check') && e.target.closest('.task').classList.toggle('done'));
+      const backdrop = document.getElementById('backdrop');
+      document.getElementById('new').onclick = () => { backdrop.classList.add('open'); };
+      let priority = 'med';
+      for (const p of ['low', 'med', 'high'])
+        document.getElementById('p-' + p).onclick = () => {
+          priority = p;
+          document.querySelectorAll('.chip').forEach((c) => c.classList.toggle('on', c.id === 'p-' + p));
+        };
+      document.getElementById('create').onclick = () => {
+        const t = document.getElementById('title').value || 'Untitled task';
+        backdrop.classList.remove('open');
+        list.insertAdjacentHTML('afterbegin', row([t, 'Launch · Due 18:00', priority, 'AY', '#f97316'], 'new'));
+        document.getElementById('today-count').textContent = '6';
+        const toast = document.getElementById('toast');
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 2200);
+      };
+      document.getElementById('nav-upcoming').onclick = () => {
+        document.querySelectorAll('.nav').forEach((n) => n.classList.toggle('on', n.id === 'nav-upcoming'));
+        document.getElementById('heading').textContent = 'Upcoming';
+        show(upcoming);
+      };
+    </script>
+  </body>
+</html>
